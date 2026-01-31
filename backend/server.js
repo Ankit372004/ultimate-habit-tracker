@@ -2,14 +2,42 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const db = require('./database');
+const multer = require('multer');
+const path = require('path');
 
 const app = express();
 const PORT = 3001;
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(cors());
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
-// Get all habits
+// ...
+
+// Configure Multer (Memory Storage for Vercel Compatibility)
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+// Serve uploads statically (fallback for old local files)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Upload endpoint
+app.post('/api/upload', upload.single('image'), (req, res) => {
+    console.log("Upload request received");
+    if (!req.file) {
+        console.error("Upload failed: No file received");
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Convert buffer to Base64 Data URI
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const mimeType = req.file.mimetype;
+    const dataURI = `data:${mimeType};base64,${b64}`;
+
+    console.log("File processed in memory");
+    res.json({ url: dataURI });
+});
 app.get('/api/habits', (req, res) => {
     db.all("SELECT * FROM habits", [], (err, rows) => {
         if (err) {
@@ -131,35 +159,7 @@ app.post('/api/journal', (req, res) => {
     });
 });
 
-const multer = require('multer');
-const path = require('path');
-// ... other imports
 
-// Configure Multer
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, 'uploads'));
-    },
-    filename: (req, file, cb) => {
-        cb(null, 'avatar-' + Date.now() + path.extname(file.originalname));
-    }
-});
-const upload = multer({ storage });
-
-// Serve uploads statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Upload endpoint
-app.post('/api/upload', upload.single('image'), (req, res) => {
-    console.log("Upload request received");
-    if (!req.file) {
-        console.error("Upload failed: No file received in 'image' field");
-        return res.status(400).json({ error: 'No file uploaded' });
-    }
-    console.log("File saved:", req.file.path);
-    const fileUrl = `http://localhost:3001/uploads/${req.file.filename}`;
-    res.json({ url: fileUrl });
-});
 
 // Get user profile
 app.get('/api/profile', (req, res) => {
