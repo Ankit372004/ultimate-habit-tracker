@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production
+dist/
+build/
+
+# Misc
+.DS_Store
+.env
+.npm
+*.log
+
+# Database (sqlite file should not be committed)
+backend/habits.db
+
+# User Uploads (do not commit user images, but keep folder)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Editor
+.vscode
+.idea
